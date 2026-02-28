@@ -1,0 +1,25 @@
+services:
+  dispatcher:
+    build: ./dispatcher-service
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./dispatcher-service/storage:/app/storage
+    environment:
+      - WORKER_URL=http://worker:8001
+    networks:
+      - padd-net
+
+  worker:
+    build: ./worker-service
+    ports:
+      - "8001:8001"  # только для внутренних вызовов, не экспортить наружу
+    platform: linux/amd64
+    volumes:
+      - ./dispatcher-service/storage:/app/storage  # общая папка с файлами
+    networks:
+      - padd-net
+
+networks:
+  padd-net:
+    driver: bridge

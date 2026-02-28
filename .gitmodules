@@ -1,0 +1,3 @@
+[submodule "worker-service/core"]
+	path = worker-service/core
+	url = git@github.com:ghimik/PADD-Core.git
