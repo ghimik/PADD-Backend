@@ -13,4 +13,4 @@ RUN mkdir -p /app/storage
 ENV STORAGE_DIR=/app/storage
 ENV WORKER_URL=http://worker:8001
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8040"]
