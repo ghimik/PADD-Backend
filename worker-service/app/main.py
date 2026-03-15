@@ -248,3 +248,35 @@ async def api_do_ocr(file: UploadFile = File(...)):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OCR Pipeline failed: {str(e)}")
+
+@app.post("/stretch_to_aspect")
+async def api_stretch_to_aspect(
+    file: UploadFile = File(...),
+    target_width: int = Form(...),
+    target_height: int = Form(...)
+):
+    """
+    Растягивает изображение под заданное соотношение сторон.
+    """
+    
+    img = load_image_from_upload(file)
+
+    try:
+        stretched = cv2.resize(
+            img,
+            (target_width, target_height),
+            interpolation=cv2.INTER_LINEAR
+        )
+
+        success, buffer = cv2.imencode(".jpg", stretched)
+
+        if not success:
+            raise HTTPException(status_code=500, detail="Encoding failed")
+
+        return Response(
+            content=buffer.tobytes(),
+            media_type="image/jpeg"
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
