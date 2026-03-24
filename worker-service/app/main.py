@@ -18,8 +18,9 @@ from core.Neuretus_XElite.core.detectors import (
         CornerBaneRefiner
     )
 from core.Neuretus_XElite.core.geometry import HomographyCorrector
-from core.Neuretus_XElite.core.ocr import OCRProcessor, RotationDetector
+from core.Neuretus_XElite.core.ocr import OCRProcessor, RotationDetector, DocumentEnhancer
 from core.Neuretus_XElite.core.pdfyer import PDFEngine
+
 
 
 models_dir = Path(__file__).parent.parent / "core" / "Neuretus_XElite" / "models"
@@ -66,6 +67,49 @@ async def startup_event():
         print(f"ОШИБКА ЗАГРУЗКИ МОДЕЛЕЙ: {e}")
         exit(1)
 
+@app.post("/enhance_document")
+async def api_enhance_document(
+    file: UploadFile = File(...),
+    brightness: Optional[float] = Form(1.15),
+    contrast: Optional[float] = Form(1.2),
+    whitening: Optional[float] = Form(0.85),
+    shadow_removal: Optional[bool] = Form(True),
+    sharpen: Optional[bool] = Form(True)
+):
+    """
+    0) Предобработка документа: улучшение контраста, отбеливание фона, удаление теней.
+    
+    Параметры:
+        brightness: коэффициент яркости (1.0 = оригинал, >1 = ярче)
+        contrast: коэффициент контраста (1.0 = оригинал, >1 = контрастнее)
+        whitening: отбеливание фона (0.7-0.9, 1.0 = без изменений)
+        shadow_removal: применять ли удаление теней (CLAHE)
+        sharpen: применять ли мягкую резкость
+    """
+    img = load_image_from_upload(file)
+    
+    try:
+        enhancer = DocumentEnhancer(
+            brightness=brightness,
+            contrast=contrast,
+            whitening=whitening,
+            shadow_removal=shadow_removal,
+            sharpen=sharpen
+        )
+        
+        enhanced = enhancer.enhance(img)
+        
+        success, buffer = cv2.imencode('.jpg', enhanced)
+        if not success:
+            raise HTTPException(status_code=500, detail="Failed to encode output image")
+        
+        return Response(
+            content=buffer.tobytes(),
+            media_type="image/jpeg"
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Enhancement failed: {str(e)}")
 
 
 def load_image_from_upload(file: UploadFile) -> np.ndarray:
